@@ -1,7 +1,7 @@
 package com.sphenon.basics.many;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -226,13 +226,17 @@ public class GenericVectorObserver<T>
     }
 
     public T                                    set             (CallContext context, long index, T item) {
+        return set(context, index, item, null);
+    }
+
+    public T                                    set             (CallContext context, long index, T item, ModificationType modification_type) {
         ValidationFailure.assertValidationOk(context, canSet(context, index, item, true));
         T old_item = this.getObserved(context).set(context, index, item);
         if (old_item != null) { 
-            onRemove(context, old_item, null); 
+            onRemove(context, old_item, modification_type); 
             notify(context, new RemoveEvent(context,old_item,index));
         }
-        onAdd(context, item, null);
+        onAdd(context, item, modification_type);
         notify(context, new AddEvent(context,item,index));
         return old_item;
     }
@@ -242,9 +246,13 @@ public class GenericVectorObserver<T>
     }
 
     public void                                        add             (CallContext context, long index, T item) throws AlreadyExists {
+        add(context, index, item, null);
+    }
+
+    public void                                        add             (CallContext context, long index, T item, ModificationType modification_type) throws AlreadyExists {
         ValidationFailure.assertValidationOk(context, canAdd(context, index, item, true));
         this.getObserved(context).add(context, index, item);
-        onAdd(context, item, null);
+        onAdd(context, item, modification_type);
         notify(context, new AddEvent(context,item,index));
     }
 
@@ -254,9 +262,13 @@ public class GenericVectorObserver<T>
     }
 
     public void                                        prepend         (CallContext context, T item) {
+        prepend(context, item, null);
+    }
+
+    public void                                        prepend         (CallContext context, T item, ModificationType modification_type) {
         ValidationFailure.assertValidationOk(context, canPrepend(context, item, true));
         this.getObserved(context).prepend(context, item);
-        onAdd(context, item, null);
+        onAdd(context, item, modification_type);
         notify(context, new AddEvent(context,item));
     }
 
@@ -280,9 +292,13 @@ public class GenericVectorObserver<T>
     }
 
     public void                                        insertBefore    (CallContext context, long index, T item) throws DoesNotExist {
+        insertBefore(context, index, item, null);
+    }
+
+    public void                                        insertBefore    (CallContext context, long index, T item, ModificationType modification_type) throws DoesNotExist {
         ValidationFailure.assertValidationOk(context, canInsertBefore(context, index, item, true));
         this.getObserved(context).insertBefore(context, index, item);
-        onAdd(context, item, null);
+        onAdd(context, item, modification_type);
         notify(context, new AddEvent(context,item,index));
     }
 
@@ -291,9 +307,13 @@ public class GenericVectorObserver<T>
     }
 
     public void                                        insertBehind    (CallContext context, long index, T item) throws DoesNotExist {
+        insertBehind(context, index, item, null);
+    }
+
+    public void                                        insertBehind    (CallContext context, long index, T item, ModificationType modification_type) throws DoesNotExist {
         ValidationFailure.assertValidationOk(context, canInsertBehind(context, index, item, true));
         this.getObserved(context).insertBehind(context, index, item);
-        onAdd(context, item, null);
+        onAdd(context, item, modification_type);
         notify(context, new AddEvent(context,item,index));
     }
 
@@ -302,11 +322,15 @@ public class GenericVectorObserver<T>
     }
 
     public T                                    replace         (CallContext context, long index, T item) throws DoesNotExist {
+        return replace(context, index, item, null);
+    }
+
+    public T                                    replace         (CallContext context, long index, T item, ModificationType modification_type) throws DoesNotExist {
         ValidationFailure.assertValidationOk(context, canReplace(context, index, item, true));
         T old_item = this.getObserved(context).replace(context, index, item);
-        onRemove(context, old_item, null);
+        onRemove(context, old_item, modification_type);
         notify(context, new RemoveEvent(context,old_item,index));
-        onAdd(context, item, null);
+        onAdd(context, item, modification_type);
         notify(context, new AddEvent(context,item,index));
         return old_item;
     }
@@ -316,10 +340,14 @@ public class GenericVectorObserver<T>
     }
 
     public T                                    unset           (CallContext context, long index) {
+        return unset(context, index, null);
+    }
+
+    public T                                    unset           (CallContext context, long index, ModificationType modification_type) {
         ValidationFailure.assertValidationOk(context, canUnset(context, index, true));
         T old_item = this.getObserved(context).unset(context, index);
         if (old_item != null) { 
-           onRemove(context, old_item, null); 
+           onRemove(context, old_item, modification_type); 
            notify(context, new RemoveEvent(context,old_item,index));
         }
         

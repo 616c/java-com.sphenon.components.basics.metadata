@@ -1,7 +1,7 @@
 package com.sphenon.basics.metadata;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -26,6 +26,8 @@ import com.sphenon.basics.variatives.*;
 // import com.sphenon.engines.factorysite.*;
 import com.sphenon.basics.metadata.returncodes.*;
 
+import java.util.List;
+import java.util.ArrayList;
 
 public class MetaDataPackageInitialiser {
 
@@ -125,6 +127,10 @@ public class MetaDataPackageInitialiser {
         int entry_number = 0;
         while ((extension = configuration.get(context, (property = "MediaTypes." + ++entry_number) + ".Extension", (String) null)) != null) {
             processEntry(context, configuration, property, extension);
+        }
+        for (List<String> entry : configuration.get(context, "MediaTypes", new ArrayList<List<String>>(), ";", ",")) {
+            MIMEType.defineMIMEType(context, entry.get(0), entry.get(1), entry.get(2), entry.size() > 3 && entry.get(3).equals("ignore_mime") ? true : false, entry.size() > 4 && entry.get(4).equals("ignore_extension") ? true : false);
+            TypeManager.getMediaType(context, entry.get(1));
         }
     }
 

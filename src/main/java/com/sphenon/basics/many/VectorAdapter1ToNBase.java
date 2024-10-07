@@ -1,7 +1,7 @@
 package com.sphenon.basics.many;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -37,7 +37,8 @@ abstract public class VectorAdapter1ToNBase<T1,T2>
   implements GenericVector<T1>,
              ManagedResource,
              Typed,
-             OCPSerialisable {
+             OCPSerialisable
+{
 
     private GenericVector<T2> source_vector;
 

@@ -1,7 +1,7 @@
 package com.sphenon.basics.many.factories;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -57,11 +57,19 @@ public class Factory_GenericVector<T> implements Factory, GenericWithRunTimeType
     protected GenericVector<T> instance;
 
     static public class _Factory<T> {
+        static public _Factory default_factory;
         static public _Factory factory;
         protected _Factory (CallContext context) {
         }
         static public<T> GenericVector<T> create (CallContext context, Type component_type) {
-            return factory.doCreate(context, component_type);
+            if (factory == null) {
+                if (default_factory == null) {
+                    default_factory = new _Factory<T>(context);
+                }
+                return default_factory.doCreate(context, component_type);
+            } else {
+                return factory.doCreate(context, component_type);
+            }
         }
         protected GenericVector<T> doCreate (CallContext context, Type component_type) {
             return GenericVectorImpl.create(context, component_type);
@@ -86,11 +94,9 @@ public class Factory_GenericVector<T> implements Factory, GenericWithRunTimeType
         return vector;
     }
 
-    public void set_ParametersAtOnce(CallContext call_context, String[] names, T [] values) {
+    public void set_ParametersAtOnce(CallContext context, String[] names, T [] values) {
         if (names.length != values.length) {
-            Context context = Context.create(call_context);
-            CustomaryContext cc = CustomaryContext.create(context);
-            cc.throwPreConditionViolation(context, ManyStringPool.get(context, "0.5.0" /* Number of names differs from number of values */));
+            CustomaryContext.create((Context)context).throwPreConditionViolation(context, ManyStringPool.get(context, "0.5.0" /* Number of names differs from number of values */));
         }
         this.names = names;
         this.values = values;

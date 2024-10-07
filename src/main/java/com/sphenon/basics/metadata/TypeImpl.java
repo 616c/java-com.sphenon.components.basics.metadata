@@ -1,7 +1,7 @@
 package com.sphenon.basics.metadata;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -286,6 +286,7 @@ public class TypeImpl implements Type, JavaType {
               return this.supertypes;
           }
           this.supertypes = new VektorImplArrayList_Type_Long_(context);
+
           Class superclass = this.myclass.getSuperclass();
           Class[] interfaces = this.myclass.getInterfaces();
           for (int i=0; i<interfaces.length; i++) {
@@ -298,6 +299,20 @@ public class TypeImpl implements Type, JavaType {
                   this.supertypes.append(context, TypeManager.get(context, Object.class));
               }
           }
+
+          /*[Issue:GenericsVsParametrised - TypeManager.java,TypeImpl.java,TypeParametrisedImpl.java,TypeParametrisedImplGenerics.java]
+          java.lang.reflect.Type superclass = this.myclass.getGenericSuperclass();
+          java.lang.reflect.Type[] interfaces = this.myclass.getGenericInterfaces();
+          for (int i=0; i<interfaces.length; i++) {
+              this.supertypes.append(context, TypeManager.get(context, interfaces[i]));
+          }
+          if (superclass != null) {
+              this.supertypes.append(context, TypeManager.get(context, superclass));
+          } else {
+              if (interfaces.length == 0 && this.myclass != Object.class) {
+                  this.supertypes.append(context, TypeManager.get(context, Object.class));
+              }
+          }*/
           
           return this.supertypes;
        }
@@ -381,23 +396,36 @@ public class TypeImpl implements Type, JavaType {
 
     public boolean isA (CallContext context, Type type) {
         if (type == null) return false;
-        if (! (type instanceof TypeImpl)) return false;
         if (this == type) { return true; }
-        Class yourclass = ((TypeImpl) type).myclass;
-        if ((this.myclass == null) != (yourclass == null)) { return false; }
-        if (this.myclass == null) { return true; }
-        
-        if (this.myclass.isPrimitive() == true || yourclass.isPrimitive() == true || this.myclass.getClassLoader() == null || yourclass.getClassLoader() == null || this.myclass.getClassLoader().equals(yourclass.getClassLoader())) {
-            return yourclass.isAssignableFrom(this.myclass);
-        } else {
-            Vector_Type_long_ sts = this.getSuperTypes(context);        
-            for (Iterator_Type_ ist = sts.getNavigator(context);
-                                ist.canGetCurrent(context);
-                                ist.next(context)) {
-                Type supertype = ist.tryGetCurrent(context);
-                if (supertype.isA(context, type)) { return true; }
+
+        Class yourclass = null;
+        if (type instanceof JavaType) {
+            yourclass = ((JavaType) type).getJavaClass(context);
+        } else if (type instanceof TypeParametrised) {
+            /*[Issue:GenericsVsParametrised - TypeManager.java,TypeImpl.java,TypeParametrisedImpl.java,TypeParametrisedImplGenerics.java]*/
+            Type bt = ((TypeParametrised) type).getBaseType(context);
+            if (bt instanceof JavaType) {
+                yourclass = ((JavaType) bt).getJavaClass(context);
             }
-            return false;
         }
+
+        if (yourclass != null) {
+            if ((this.myclass == null) != (yourclass == null)) { return false; }
+            if (this.myclass == null) { return true; }
+
+            if (this.myclass.isPrimitive() == true || yourclass.isPrimitive() == true || this.myclass.getClassLoader() == null || yourclass.getClassLoader() == null || this.myclass.getClassLoader().equals(yourclass.getClassLoader())) {
+                return yourclass.isAssignableFrom(this.myclass);
+            }
+        }
+
+        Vector_Type_long_ sts = this.getSuperTypes(context);        
+        for (Iterator_Type_ ist = sts.getNavigator(context);
+                            ist.canGetCurrent(context);
+                            ist.next(context)) {
+            Type supertype = ist.tryGetCurrent(context);
+            if (supertype.isA(context, type)) { return true; }
+        }
+
+        return false;
     }    
 }

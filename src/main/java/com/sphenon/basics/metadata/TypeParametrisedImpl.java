@@ -1,7 +1,7 @@
 package com.sphenon.basics.metadata;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -25,8 +25,12 @@ import com.sphenon.basics.many.tplinst.*;
 
 import java.io.*;
 
+import java.util.Map;
+import java.util.HashMap;
+
 public class TypeParametrisedImpl
-  implements TypeParametrised
+  implements TypeParametrised, TypeWithProperties
+
 {
     static protected boolean debug = false;
 
@@ -44,6 +48,10 @@ public class TypeParametrisedImpl
         this.supertypes = null;
         this.parameters = parameters;
         this.parameter_names = parameter_names;
+
+        if (base_type instanceof TypeParametrised) {
+            System.err.println("Base type of parametrised type is also parametrised: " + this.getId(context));
+        }
 
         boolean problem = false;
         if (this.parameters != null) {
@@ -248,5 +256,18 @@ public class TypeParametrisedImpl
 
     public String toString() {
         return (debug ? super.toString() : "") + "[" + getId(RootContext.getFallbackCallContext()) + "]";
+    }
+
+    protected Map<String,Object> properties;
+
+    public Object getProperty(CallContext context, String name) {
+        return (name != null && this.properties != null ? properties.get(name) : null);
+    }
+
+    public void setProperty(CallContext context, String name, Object value) {
+        if (this.properties == null) {
+            this.properties = new HashMap<String,Object>(2);
+        }
+        this.properties.put(name, value);
     }
 }

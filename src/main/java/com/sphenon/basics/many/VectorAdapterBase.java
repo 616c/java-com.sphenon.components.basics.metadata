@@ -1,7 +1,7 @@
 package com.sphenon.basics.many;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -22,6 +22,7 @@ import com.sphenon.basics.notification.NotificationLevel;
 import com.sphenon.basics.notification.NotificationContext;
 import com.sphenon.basics.notification.NotificationLocationContext;
 import com.sphenon.basics.customary.*;
+import com.sphenon.basics.interaction.*;
 import com.sphenon.basics.data.*;
 import com.sphenon.engines.aggregator.*;
 import com.sphenon.basics.metadata.Type;
@@ -38,7 +39,8 @@ abstract public class VectorAdapterBase<T1,T2>
              VectorReorderable<T1>,
              ManagedResource,
              Typed,
-             OCPSerialisable {
+             OCPSerialisable
+{
 
     private GenericVector<T2> source_vector;
     private DataSource<GenericVector<T2>> source_vector_ds;
@@ -158,7 +160,7 @@ abstract public class VectorAdapterBase<T1,T2>
         return this.getSourceVector(context).getSize(context);
     }
 
-    protected class IteratorAdapter implements java.util.Iterator<T1> {
+    protected class IteratorAdapter implements java.util.Iterator<T1>, Anchorable {
         protected IteratorItemIndex<T1> iterator;
         protected CallContext context;
         public IteratorAdapter(CallContext context, IteratorItemIndex<T1> iterator) {
@@ -175,6 +177,13 @@ abstract public class VectorAdapterBase<T1,T2>
             iterator.next(this.context);
             return current;
         }
+
+        // -----------------------------------------------------------------------
+        // -- Anchorable ---------------------------------------------------------
+        public com.sphenon.basics.interaction.Anchor createAnchor(CallContext context, Workspace workspace, Transaction transaction) {
+            return (com.sphenon.basics.interaction.Anchor) com.sphenon.basics.interaction.AnchorInterceptor.wrap(context, this, workspace, transaction);
+        }
+        // -----------------------------------------------------------------------
     }
 
     public java.util.Iterator<T1> getIterator (CallContext context) {

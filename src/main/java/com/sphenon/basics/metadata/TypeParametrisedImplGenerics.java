@@ -1,7 +1,7 @@
 package com.sphenon.basics.metadata;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -32,10 +32,17 @@ public class TypeParametrisedImplGenerics
     private java.lang.reflect.ParameterizedType parameterized_type;
 
     protected boolean is_unspecific;
+    /*[Issue:GenericsVsParametrised - TypeManager.java,TypeImpl.java,TypeParametrisedImpl.java,TypeParametrisedImplGenerics.java]
+    protected boolean is_pseudo_specific; */
 
     public boolean getIsUnspecific (CallContext context) {
         return this.is_unspecific;
     }
+
+    /*[Issue:GenericsVsParametrised - TypeManager.java,TypeImpl.java,TypeParametrisedImpl.java,TypeParametrisedImplGenerics.java]
+    public boolean getIsPseudoSpecific (CallContext context) {
+        return this.is_pseudo_specific;
+    }*/
 
     public TypeParametrisedImplGenerics (CallContext context, java.lang.reflect.ParameterizedType parameterized_type) {
         super(context);
@@ -44,12 +51,20 @@ public class TypeParametrisedImplGenerics
         this.parameter_names = Factory_Vector_String_long_.construct(context);
         java.lang.reflect.Type[] type_arguments = parameterized_type.getActualTypeArguments();
         this.is_unspecific = true;
+        /*[Issue:GenericsVsParametrised - TypeManager.java,TypeImpl.java,TypeParametrisedImpl.java,TypeParametrisedImplGenerics.java]
+        this.is_pseudo_specific = true;*/
         for (java.lang.reflect.Type type_argument : type_arguments) {
-            if ((type_argument instanceof java.lang.reflect.WildcardType) == false) {
+            if (type_argument instanceof java.lang.reflect.WildcardType) {
+                this.parameters.append(context, Type_Wildcard.getSingleton(context));
+            } else {
                 this.is_unspecific = false;
                 this.parameters.append(context, TypeManager.get(context, type_argument));
-            } else {
-                this.parameters.append(context, Type_Wildcard.getSingleton(context));
+                /*[Issue:GenericsVsParametrised - TypeManager.java,TypeImpl.java,TypeParametrisedImpl.java,TypeParametrisedImplGenerics.java]
+                if (    (type_argument instanceof Class) == false
+                     || ((Class) type_argument).equals(Object.class) == false
+                   ) {
+                    this.is_pseudo_specific = false;
+                }*/
             }
             if (type_argument instanceof java.lang.reflect.TypeVariable) {
                 this.parameter_names.append(context, ((java.lang.reflect.TypeVariable)type_argument).getName());

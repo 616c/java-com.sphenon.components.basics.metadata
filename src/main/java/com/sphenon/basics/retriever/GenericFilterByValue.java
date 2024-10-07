@@ -1,7 +1,7 @@
 package com.sphenon.basics.retriever;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -19,37 +19,22 @@ import com.sphenon.basics.exception.*;
 import com.sphenon.basics.retriever.*;
 import com.sphenon.basics.metadata.*;
 
-public class GenericFilterByValue<TargetType> implements GenericFilter<TargetType>, FilterByValue {
+import com.sphenon.basics.retriever.classes.*;
+
+public class GenericFilterByValue<TargetType> extends GenericFilterBase<TargetType> implements FilterByValue {
 
     public GenericFilterByValue (CallContext context, Type target_type) {
-        this.target_type = target_type;
-        this.setFilterEnabled(context, false);
+        super(context, target_type);
     }
 
     public GenericFilterByValue (CallContext context, Type target_type, TargetType value) {
-        this.target_type = target_type;
+        super(context, target_type);
         this.setValue(context, value);
     }
 
     public GenericFilterByValue (CallContext context, Type target_type, TargetType... values) {
-        this.target_type = target_type;
+        super(context, target_type);
         this.setValues(context, values);
-    }
-
-    protected Type target_type;
-
-    public Type getTargetType (CallContext context) {
-        return this.target_type;
-    }
-
-    protected boolean filter_enabled;
-
-    public boolean getFilterEnabled (CallContext context) {
-        return this.filter_enabled;
-    }
-
-    public void setFilterEnabled (CallContext context, boolean filter_enabled) {
-        this.filter_enabled = filter_enabled;
     }
 
     protected TargetType[] values;
@@ -75,6 +60,11 @@ public class GenericFilterByValue<TargetType> implements GenericFilter<TargetTyp
 
     public Object getValueAsObject (CallContext context) {
         return this.values != null && this.values.length == 1 ? this.values[0] : this.values;
+    }
+
+    public FilterByValue setValueAsObject(CallContext context, Object value) {
+        this.setValue(context, (TargetType) value);
+        return this;
     }
 
     public boolean matches (CallContext context, TargetType object) {

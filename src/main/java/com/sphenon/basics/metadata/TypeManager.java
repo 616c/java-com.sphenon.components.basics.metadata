@@ -1,7 +1,7 @@
 package com.sphenon.basics.metadata;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -233,7 +233,7 @@ public class TypeManager
             if (this.parents != null) {
                 for (SearchPathContext parent : this.parents) {
                     value = parent.getFromCache(context, key);
-                    if (value != null) { return value; }
+                    if (value != null && (Type_Invalid.getSingleton(context).equals(value) == false)) { return value; }
                 }
             }
             return null;
@@ -310,12 +310,28 @@ public class TypeManager
         }
     }
 
+    static public<T> Type getIfNonNull(CallContext context, T t) throws NoSuchClass {
+        return getIfNonNull(context, t, false);
+    }
+
+    static public<T> Type getIfNonNull(CallContext context, T t, boolean optionally_add) throws NoSuchClass {
+        if (t == null) { return null; }
+        if (t instanceof String                ) { return get(context, (String                ) t, false, optionally_add); }
+        if (t instanceof Class                 ) { return get(context, (Class                 ) t); }
+        if (t instanceof java.lang.reflect.Type) { return get(context, (java.lang.reflect.Type) t); }
+        return get(context, t);
+    }
+
     static public Type get (CallContext context, String type_name) throws NoSuchClass {
         return get(context, type_name, false);
     }
 
     static public Type get (CallContext context, String type_name, boolean extensive) throws NoSuchClass {
-        Type type = doGet(context, type_name, true, extensive, null, null);
+        return get(context, type_name, extensive, false);
+    }
+
+    static public Type get (CallContext context, String type_name, boolean extensive, boolean optionally_add) throws NoSuchClass {
+        Type type = doGet(context, type_name, true, extensive, null, null, optionally_add);
         if (type == null) {
             TypeContext tc = TypeContext.get((Context)context);
             SearchPathContext spc = SearchPathContext.getSearchPathContext(context, tc.getSearchPathContext(context));
@@ -350,7 +366,7 @@ public class TypeManager
         return defineType(context, type_name, super_type, extensive, spc, allow_existing);
     }
 
-    static public boolean sanity_check = true;
+    static public boolean sanity_check = false;
     static public boolean sanity_check_warning = false;
 
     static public Type defineType (CallContext context, String type_name, Type super_type, boolean extensive, SearchPathContext spc, boolean allow_existing) {
@@ -447,14 +463,21 @@ public class TypeManager
         }
     }
 
-    // SearchPathCache Issue: Bitte das TypeManager.SearchPathCache.iss File hierzu lesen
     static protected Type doGet (CallContext context, String type_name, boolean throw_exception, boolean extensive, String alias, SearchPathContext spc) throws NoSuchClass {
+        return doGet(context, type_name, throw_exception, extensive, alias, spc, false);
+    }
+
+    // SearchPathCache Issue: Bitte das TypeManager.SearchPathCache.iss File hierzu lesen
+    static protected Type doGet (CallContext context, String type_name, boolean throw_exception, boolean extensive, String alias, SearchPathContext spc, boolean optionally_add) throws NoSuchClass {
         if (spc == null) {
             TypeContext tc = TypeContext.get((Context) context);
             spc = SearchPathContext.getSearchPathContext(context, tc.getSearchPathContext(context));
         }
 
         if ((notification_level & Notifier.DIAGNOSTICS) != 0) { NotificationContext.sendTrace(context, Notifier.DIAGNOSTICS, "Looking for type '%(type)' in '%(name)'", "type", type_name, "name", spc.getName(context)); }
+        // if (type_name != null && type_name.equals("UMLPackage") && spc.getName(context) != null && spc.getName(context).equals("com.sphenon.software.production")) {
+        //     System.err.println("Buh");
+        // }
 
         if (type_name == null || type_name.equals("")) { return TypeImpl_Null.getSingleton(context); }
 
@@ -478,7 +501,12 @@ public class TypeManager
         boolean is_parametrised = false;
         int tnl = 0;
 
-        Type type = spc.getFromCache(context, type_name);
+        Type type = null;
+        if (type_name.startsWith("MIME:")) {
+            type = getMediaTypeMIME(context, type_name.substring(5), optionally_add);
+        } else {
+            type = spc.getFromCache(context, type_name);
+        }
         if (type != null && Type_Invalid.getSingleton(context).equals(type)) {
             return null;
         }
@@ -684,11 +712,18 @@ public class TypeManager
 
             String name = ((java.lang.reflect.TypeVariable) type).getName();
             int index = -1;
-            for(int i=0; i<pns.getSize(context); i++) {
-                String variable_name = pns.tryGet(context, i);
-                if (name.equals(variable_name)) {
-                    index = i;
-                    break;
+            if (    pns.getSize(context) == 1
+                 && pns.tryGet(context, 0).equals("?")
+               ) {
+                index = 0;
+            } else {
+                // wenn sps.size > 1, macht das dann überhaupt Sinn hier?
+                for(int i=0; i<pns.getSize(context); i++) {
+                    String variable_name = pns.tryGet(context, i);
+                    if (name.equals(variable_name)) {
+                        index = i;
+                        break;
+                    }
                 }
             }
             if (index == -1) {
@@ -744,6 +779,12 @@ public class TypeManager
         return get(context, instance.getClass());
     }
 
+    static public String getMIMEType (CallContext context, Type type) {
+        return (type != null && type instanceof TypeImpl_MediaObject
+                ? ((TypeImpl_MediaObject) type).getMediaType(context)
+                : null);
+    }
+
     static public Type getMediaTypeRoot (CallContext context) {
         return getCachedMediaType(context, null, null, null, true, false);
     }
@@ -761,17 +802,25 @@ public class TypeManager
     }
 
     static public Type getMediaType (CallContext context, String type, String subtype) {
-        MIMEType mt = MIMEType.getMIMEType(context, type, subtype);
+        return getMediaType(context, type, subtype, false);
+    }
+
+    static public Type getMediaType (CallContext context, String type, String subtype, boolean optionally_add) {
+        MIMEType mt = MIMEType.getMIMEType(context, type, subtype, optionally_add);
         return getCachedMediaType(context, null, null, mt, false, false);
     }
 
     static public Type getMediaTypeMIME (CallContext context, String mime_type) {
+        return getMediaTypeMIME(context, mime_type, false);
+    }
+
+    static public Type getMediaTypeMIME (CallContext context, String mime_type, boolean optionally_add) {
         if (mime_type == null || mime_type.isEmpty() || mime_type.indexOf("/") == -1) {
             System.err.println("Invalid MIME type in TypeManager: " + mime_type);
             return getMediaType_text_plain(context);
         }
         String[] mt = mime_type.split("/");
-        return getMediaType (context, mt[0], mt[1]);
+        return getMediaType (context, mt[0], mt[1], optionally_add);
     }
 
     static public Type media_type_text_plain;
@@ -828,7 +877,10 @@ public class TypeManager
 
     static public Type getParametrised (CallContext context, java.lang.reflect.ParameterizedType parameterized_type) {
         TypeParametrisedImplGenerics tpig = new TypeParametrisedImplGenerics(context, parameterized_type);
-        if (tpig.getIsUnspecific(context)) {
+        if (    tpig.getIsUnspecific(context)
+           /*[Issue:GenericsVsParametrised - TypeManager.java,TypeImpl.java,TypeParametrisedImpl.java,TypeParametrisedImplGenerics.java]
+             || tpig.getIsPseudoSpecific(context) */
+           ) {
             return get(context, (Class) parameterized_type.getRawType());
         }
         return getCachedParametrised (context, tpig);
@@ -1157,7 +1209,7 @@ public class TypeManager
             String spc_name = m.group(1);
 
             if (isValidSearchPath(context, spc_name) == false) {
-                if ((notification_level & Notifier.MONITORING) != 0) { NotificationContext.sendCaution(context, "Search path '%(searchpath)' not configured  (type cache entry skipped)", "searchpath", spc_name); }
+                if ((notification_level & Notifier.OBSERVATION) != 0) { NotificationContext.sendCaution(context, "Search path '%(searchpath)' not configured  (type cache entry skipped)", "searchpath", spc_name); }
             } else {
                 if ((notification_level & Notifier.DIAGNOSTICS) != 0) { NotificationContext.sendDiagnostics(context, "Loading Search Path Context '%(spc)'", "spc", spc_name); }
                 SearchPathContext spc = SearchPathContext.getSearchPathContext(context, spc_name);
@@ -1205,5 +1257,20 @@ public class TypeManager
                             : Object.class
                           );
         return java_type;
+    }
+
+    static public Type erase(CallContext context, Type type) {
+        if (type instanceof TypeParametrised) {
+            return erase(context, ((TypeParametrised) type).getBaseType(context));
+        } else {
+            return type;
+        }
+    }
+
+    static public boolean isAErased(CallContext context, Type type1, Type type2) {
+        return (type1 instanceof TypeParametrised
+                 ? type1.isA(context, type2)
+                 : type1.isA(context, erase(context, type2))
+               );
     }
 }

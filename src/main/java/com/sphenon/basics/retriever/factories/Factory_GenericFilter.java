@@ -1,7 +1,7 @@
 package com.sphenon.basics.retriever.factories;
 
 /****************************************************************************
-  Copyright 2001-2018 Sphenon GmbH
+  Copyright 2001-2024 Sphenon GmbH
 
   Licensed under the Apache License, Version 2.0 (the "License"); you may not
   use this file except in compliance with the License. You may obtain a copy
@@ -51,12 +51,28 @@ public class Factory_GenericFilter<TargetType> {
         return newInstance(context).create(context, target_type, false);
     }
 
-    static public<TargetType> GenericFilter<TargetType> construct (CallContext context, Class target_type, boolean optional) {
+    static public<TargetType> GenericFilter<TargetType> construct (CallContext context, Type target_type, TargetType value) {
+        return newInstance(context).create(context, target_type, value);
+    }
+
+    static public<TargetType> GenericFilter<TargetType> construct (CallContext context, Type target_type, TargetType... values) {
+        return newInstance(context).create(context, target_type, values);
+    }
+
+    static public<TargetType> GenericFilter<TargetType> construct (CallContext context, Class<TargetType> target_type) {
+        return newInstance(context).create(context, TypeManager.get(context, target_type), false);
+    }
+
+    static public<TargetType> GenericFilter<TargetType> construct (CallContext context, Class<TargetType> target_type, boolean optional) {
         return newInstance(context).create(context, TypeManager.get(context, target_type), optional);
     }
 
-    static public<TargetType> GenericFilter<TargetType> construct (CallContext context, Class target_type) {
-        return newInstance(context).create(context, TypeManager.get(context, target_type), false);
+    static public<TargetType> GenericFilter<TargetType> construct (CallContext context, Class<TargetType> target_type, TargetType value) {
+        return newInstance(context).create(context, TypeManager.get(context, target_type), value);
+    }
+
+    static public<TargetType> GenericFilter<TargetType> construct (CallContext context, Class<TargetType> target_type, TargetType... values) {
+        return newInstance(context).create(context, TypeManager.get(context, target_type), values);
     }
 
     protected Factory_GenericFilter (CallContext context) {
@@ -64,5 +80,13 @@ public class Factory_GenericFilter<TargetType> {
 
     public GenericFilter<TargetType> create (CallContext context, Type target_type, boolean optional) {
         return optional ? new GenericFilterByValue_Optional(context, target_type) : new GenericFilterByValue(context, target_type);
+    }
+
+    public GenericFilter<TargetType> create (CallContext context, Type target_type, TargetType value) {
+        return new GenericFilterByValue(context, target_type, value);
+    }
+
+    public GenericFilter<TargetType> create (CallContext context, Type target_type, TargetType... values) {
+        return new GenericFilterByValue(context, target_type, values);
     }
 }
